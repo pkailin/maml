@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Usage Instructions:
     10-shot sinusoid:
@@ -70,6 +72,8 @@ flags.DEFINE_integer('train_update_batch_size', -1, 'number of examples used for
 flags.DEFINE_float('train_update_lr', -1, 'value of inner gradient step step during training. (use if you want to test with a different value)') # 0.1 for omniglot
 
 def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
+
+    # KL: defines logging and checkpointing intervals
     SUMMARY_INTERVAL = 100
     SAVE_INTERVAL = 1000
     if FLAGS.datasource == 'sinusoid':
@@ -81,22 +85,41 @@ def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
 
     if FLAGS.log:
         train_writer = tf.summary.FileWriter(FLAGS.logdir + '/' + exp_string, sess.graph)
+    
     print('Done initializing, starting training.')
     prelosses, postlosses = [], []
 
     num_classes = data_generator.num_classes # for classification, 1 otherwise
     multitask_weights, reg_weights = [], []
 
+    # KL: training loop: iterates through pre training and meta training
     for itr in range(resume_itr, FLAGS.pretrain_iterations + FLAGS.metatrain_iterations):
         feed_dict = {}
         if 'generate' in dir(data_generator):
+            # KL: generate inputs and outputs from data_generator
             batch_x, batch_y, amp, phase = data_generator.generate()
 
             if FLAGS.baseline == 'oracle':
                 batch_x = np.concatenate([batch_x, np.zeros([batch_x.shape[0], batch_x.shape[1], 2])], 2)
+                # KL: include amplitude and phase in the input for oracle 
                 for i in range(FLAGS.meta_batch_size):
                     batch_x[i, :, 1] = amp[i]
                     batch_x[i, :, 2] = phase[i]
+
+            """
+            KL Data Generation Notes: 
+
+            For data generated, 
+            1. FLAGS.update_batch_size*2 = num_samples_per_class (per amp and phase)
+            
+            this is provided in the run command, K shot learning meaning update_batch_size = K = K datapoints per class. update_batch_size*2 is generated because K datapoints for training (inputa, labela) and K datapoints for testing (inputb, labelb). 
+    
+            2. FLAGS.meta_batch_size = batch_size (number of classes/number of tasks/number of unique amp and phase.
+
+            3. num_classes = 1 for sinusoid, this is NOT batch_size above. this refers to dimension of data, thus for classification > 1 due to 1-hot encoding. 
+
+            4. input a = meta_batch_size × test_samples × input_dim
+            """
 
             inputa = batch_x[:, :num_classes*FLAGS.update_batch_size, :]
             labela = batch_y[:, :num_classes*FLAGS.update_batch_size, :]
@@ -104,11 +127,14 @@ def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
             labelb = batch_y[:, num_classes*FLAGS.update_batch_size:, :]
             feed_dict = {model.inputa: inputa, model.inputb: inputb,  model.labela: labela, model.labelb: labelb}
 
+        # KL: for pretraining, train with pretrain_op
         if itr < FLAGS.pretrain_iterations:
             input_tensors = [model.pretrain_op]
+        # KL: for metatraining, train with metatrain_op
         else:
             input_tensors = [model.metatrain_op]
 
+        # KL: log and print losses before adaptation losses1, and after adaptation losses2
         if (itr % SUMMARY_INTERVAL == 0 or itr % PRINT_INTERVAL == 0):
             input_tensors.extend([model.summ_op, model.total_loss1, model.total_losses2[FLAGS.num_updates-1]])
             if model.classification:
@@ -127,14 +153,25 @@ def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
                 print_str = 'Pretrain Iteration ' + str(itr)
             else:
                 print_str = 'Iteration ' + str(itr - FLAGS.pretrain_iterations)
+
+            # KL : print prelosses and postlosses (mean losses in training data a, mean losses in test data b)
             print_str += ': ' + str(np.mean(prelosses)) + ', ' + str(np.mean(postlosses))
             print(print_str)
             prelosses, postlosses = [], []
 
         if (itr!=0) and itr % SAVE_INTERVAL == 0:
+            # KL: model is saved after 1000 iterations 
             saver.save(sess, FLAGS.logdir + '/' + exp_string + '/model' + str(itr))
 
         # sinusoid is infinite data, so no need to test on meta-validation set.
+        '''
+        KL Explanation: 
+
+        Sinusoid regression tasks are infinite and non-repetitive, so meta-validation is redundant. Every new batch is effectively an unseen validation task.
+        
+        For classification tasks, validation is needed to track generalization to unseen classes.
+        
+        '''
         if (itr!=0) and itr % TEST_PRINT_INTERVAL == 0 and FLAGS.datasource !='sinusoid':
             if 'generate' not in dir(data_generator):
                 feed_dict = {}
@@ -162,6 +199,7 @@ def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
 # calculated for omniglot
 NUM_TEST_POINTS = 600
 
+# KL: testing on completely unseen data to evaluate loss 
 def test(model, saver, sess, exp_string, data_generator, test_num_updates=None):
     num_classes = data_generator.num_classes # for classification, 1 otherwise
 
@@ -170,6 +208,8 @@ def test(model, saver, sess, exp_string, data_generator, test_num_updates=None):
 
     metaval_accuracies = []
 
+    # KL: generate NUM_TEST_POINTS sets of batch data 
+    # each batch has batch_size tasks, with update_batch_size number of samples each task 
     for _ in range(NUM_TEST_POINTS):
         if 'generate' not in dir(data_generator):
             feed_dict = {}
@@ -187,11 +227,17 @@ def test(model, saver, sess, exp_string, data_generator, test_num_updates=None):
             labela = batch_y[:, :num_classes*FLAGS.update_batch_size, :]
             labelb = batch_y[:,num_classes*FLAGS.update_batch_size:, :]
 
+            # KL: meta_lr = 0.0 since testing 
             feed_dict = {model.inputa: inputa, model.inputb: inputb,  model.labela: labela, model.labelb: labelb, model.meta_lr: 0.0}
 
         if model.classification:
             result = sess.run([model.metaval_total_accuracy1] + model.metaval_total_accuracies2, feed_dict)
-        else:  # this is for sinusoid
+
+        # KL: this is for sinusoid
+        # KL: total_loss1 is calculated on inputa (before adaptation), total_losses2 are calculated on inputb (after adaptation). 
+        # They are not added together but are returned separately, however because this is ran for only 1 iteration, no gradient updates that are performed will be applied so essentially inputa and inputb are treated the same way for testing. 
+
+        else:  
             result = sess.run([model.total_loss1] +  model.total_losses2, feed_dict)
         metaval_accuracies.append(result)
 
@@ -217,8 +263,10 @@ def test(model, saver, sess, exp_string, data_generator, test_num_updates=None):
 def main():
     if FLAGS.datasource == 'sinusoid':
         if FLAGS.train:
+            # KL: use 5 loops of gradient update for each task during training 
             test_num_updates = 5
         else:
+            # KL: use 10 loops of gradient update for each task during testing
             test_num_updates = 10
     else:
         if FLAGS.datasource == 'miniimagenet':
@@ -235,6 +283,9 @@ def main():
         FLAGS.meta_batch_size = 1
 
     if FLAGS.datasource == 'sinusoid':
+        # KL: generates datapoints (go to data_generator.py)
+        # KL: FLAGS.update_batch_size*2 = num_samples_per_class (per amp and phase)
+        # KL: FLAGS.meta_batch_size = batch_size (number of classes/number of tasks/number of unique amp and phase)
         data_generator = DataGenerator(FLAGS.update_batch_size*2, FLAGS.meta_batch_size)
     else:
         if FLAGS.metatrain_iterations == 0 and FLAGS.datasource == 'miniimagenet':
@@ -254,7 +305,9 @@ def main():
     dim_output = data_generator.dim_output
     if FLAGS.baseline == 'oracle':
         assert FLAGS.datasource == 'sinusoid'
-        dim_input = 3
+        #  KL: oracle takes in the phase and amplitude so point + phase + amplitude = 3 dim input 
+        dim_input = 3 
+        # no metatraining for oracle 
         FLAGS.pretrain_iterations += FLAGS.metatrain_iterations
         FLAGS.metatrain_iterations = 0
     else:
@@ -284,11 +337,17 @@ def main():
         tf_data_load = False
         input_tensors = None
 
+    # KL: initialise MAML object 
     model = MAML(dim_input, dim_output, test_num_updates=test_num_updates)
+
+    # KL: for regression
     if FLAGS.train or not tf_data_load:
-        model.construct_model(input_tensors=input_tensors, prefix='metatrain_')
+        model.construct_model(input_tensors=input_tensors, prefix='metatrain_')   
+    
+    # KL: for classification only 
     if tf_data_load:
         model.construct_model(input_tensors=metaval_input_tensors, prefix='metaval_')
+
     model.summ_op = tf.summary.merge_all()
 
     saver = loader = tf.train.Saver(tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES), max_to_keep=10)
@@ -342,6 +401,7 @@ def main():
     if FLAGS.train:
         train(model, saver, sess, exp_string, data_generator, resume_itr)
     else:
+        # When testing, the code uses tf.train.latest_checkpoint()
         test(model, saver, sess, exp_string, data_generator, test_num_updates)
 
 if __name__ == "__main__":
