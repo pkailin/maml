@@ -148,6 +148,8 @@ class MAML:
 
             # KL: task_metalearn function applied here to get losses for each task in PARALLEL. 
             result = tf.map_fn(task_metalearn, elems=(self.inputa, self.inputb, self.labela, self.labelb), dtype=out_dtype, parallel_iterations=FLAGS.meta_batch_size)
+            # ADDED CODE
+            self.result = result 
 
             if self.classification:
                 outputas, outputbs, lossesa, lossesb, accuraciesa, accuraciesb = result
@@ -196,8 +198,9 @@ class MAML:
                 # KL: applies meta gradient update. this updates the ACTUAL weights to be used across ALL tasks  
                 self.metatrain_op = optimizer.apply_gradients(gvs)
         
-        # KL: validation phase without changing model weights 
-        # KL: self.metaval_total_loss1 = total_loss1, self.metaval_total_losses2 = total_losses2. 
+        # KL: testing phase for classification without changing model weights 
+        # KL: self.metaval_total_losses2 = total_losses2 (as calculated above), this is an array of length num_updates 
+        # KL: self.metaval_total_loss1 is the mean of ALL tasks and then SUMMED up across the array of length num_updates, so it is A SCALAR. 
         else:
             self.metaval_total_loss1 = total_loss1 = tf.reduce_sum(lossesa) / tf.to_float(FLAGS.meta_batch_size)
             self.metaval_total_losses2 = total_losses2 = [tf.reduce_sum(lossesb[j]) / tf.to_float(FLAGS.meta_batch_size) for j in range(num_updates)]

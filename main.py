@@ -7,7 +7,7 @@ Usage Instructions:
 
     10-shot sinusoid baselines:
         python main.py --datasource=sinusoid --logdir=logs/sine/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10 --baseline=oracle
-        python main.py --datasource=sinusoid --logdir=logs/sine/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+        python main.py --datasource=sinusoid --logdir=logs/sine/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10 # EDITED CODE to differentiate MAML and baseline 
 
     5-way, 1-shot omniglot:
         python main.py --datasource=omniglot --metatrain_iterations=60000 --meta_batch_size=32 --update_batch_size=1 --update_lr=0.4 --num_updates=1 --logdir=logs/omniglot5way/
@@ -165,11 +165,7 @@ def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
 
         # sinusoid is infinite data, so no need to test on meta-validation set.
         '''
-        KL Explanation: 
-
-        Sinusoid regression tasks are infinite and non-repetitive, so meta-validation is redundant. Every new batch is effectively an unseen validation task.
-        
-        For classification tasks, validation is needed to track generalization to unseen classes.
+        KL Explanation: Sinusoid regression tasks are infinite so no need to separate out test set, metaval for testing 
         
         '''
         if (itr!=0) and itr % TEST_PRINT_INTERVAL == 0 and FLAGS.datasource !='sinusoid':
@@ -233,10 +229,8 @@ def test(model, saver, sess, exp_string, data_generator, test_num_updates=None):
         if model.classification:
             result = sess.run([model.metaval_total_accuracy1] + model.metaval_total_accuracies2, feed_dict)
 
-        # KL: this is for sinusoid
-        # KL: total_loss1 is calculated on inputa (before adaptation), total_losses2 are calculated on inputb (after adaptation). 
-        # They are not added together but are returned separately, however because this is ran for only 1 iteration, no gradient updates that are performed will be applied so essentially inputa and inputb are treated the same way for testing. 
-
+        # KL: this is for sinusoid 
+        # KL: metaval_accuracies has length num_updates + 1. first value comes from total_loss1 which is a scalar, refer to maml.py line 201. the next num_updates come from total_loss2. 
         else:  
             result = sess.run([model.total_loss1] +  model.total_losses2, feed_dict)
         metaval_accuracies.append(result)
