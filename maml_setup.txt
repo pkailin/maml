@@ -1,0 +1,143 @@
+conda create -n maml python=3.7
+conda activate maml 
+
+pip install tensorflow==1.15
+pip uninstall protobuf
+pip install protobuf==3.20.*
+pip install matplotlib
+
+When running training/evaluation: 
+
+in maml.py: 
+1. change line 37/38 depending on number of hidden layers 
+
+in data_generator.py: 
+1. change lines 188-198 depending on sinusoid/sigmoid 
+
+
+When plotting curves at test time: 
+
+in sinusoid.py: 
+1. change line 93/94 depending on baseline/MAML
+2. change line 102/103 depending on baseline/MAML
+3. change line 96/97 depending on sinusoid/sigmoid 
+4. change line 136-147 depending on model directory 
+
+in maml.py: 
+1. change line 37/38 depending on number of hidden layers 
+
+in data_generator.py: 
+1. change lines 188-198 depending on sinusoid/sigmoid 
+2. change lines 200-202 depending on sinusoid/sigmoid
+
+
+For sinusoid: 
+
+Training: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sine/ --metatrain_iterations=70000 --norm=None --update_batch_size=10
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sine/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+Evaluation: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sine/ --metatrain_iterations=70000 --norm=None --update_batch_size=10 --train=False --test_set=True 
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sine/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10 --train=False --test_set=True
+
+Plotting: 
+MAML: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/sine/ --metatrain_iterations=70000 --norm=None --update_batch_size=10
+Baseline: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/sine/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+For sinusoid (5 shot): 
+
+Training: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sine_5shot/ --metatrain_iterations=70000 --norm=None --update_batch_size=5
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sine_5shot/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=5
+
+Evaluation: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sine_5shot/ --metatrain_iterations=70000 --norm=None --update_batch_size=5 --train=False --test_set=True 
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sine_5shot/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=5 --train=False --test_set=True
+
+
+For sinusoid (20 shot): 
+
+Training: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sine_20shot/ --metatrain_iterations=70000 --norm=None --update_batch_size=20
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sine_20shot/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=20
+
+Evaluation: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sine_20shot/ --metatrain_iterations=70000 --norm=None --update_batch_size=20 --train=False --test_set=True 
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sine_20shot/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=20 --train=False --test_set=True
+
+
+
+
+
+
+
+
+
+
+
+For sigmoid: 
+
+Training: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sigmoid/ --metatrain_iterations=70000 --norm=None --update_batch_size=10
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sigmoid/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+Evaluation: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sigmoid/ --metatrain_iterations=70000 --norm=None --update_batch_size=10 --train=False --test_set=True 
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sigmoid/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10 --train=False --test_set=True
+
+Plotting: 
+MAML: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/sigmoid/ --metatrain_iterations=70000 --norm=None --update_batch_size=10
+Baseline: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/sigmoid/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+For sigmoid (with larger network - 4 hidden layers):
+
+Training: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sigmoid_4hidd/ --metatrain_iterations=70000 --norm=None --update_batch_size=10
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sigmoid_4hidd/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+Evaluation: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/sigmoid_4hidd/ --metatrain_iterations=70000 --norm=None --update_batch_size=10 --train=False --test_set=True 
+Baseline: python main.py --datasource=sinusoid --logdir=logs/sigmoid_4hidd/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10 --train=False --test_set=True
+
+Plotting: 
+MAML: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/sigmoid_4hidd/ --metatrain_iterations=70000 --norm=None --update_batch_size=10
+Baseline: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/sigmoid_4hidd/baseline/ --pretrain_iterations=70000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+For polynomial (with larger network - 4 hidden layers):
+
+Training: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/poly/ --metatrain_iterations=100000 --norm=None --update_batch_size=10
+Baseline: python main.py --datasource=sinusoid --logdir=logs/poly/baseline/ --pretrain_iterations=100000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+Evaluation: 
+MAML: python main.py --datasource=sinusoid --logdir=logs/poly/ --metatrain_iterations=100000 --norm=None --update_batch_size=10 --train=False --test_set=True 
+Baseline: python main.py --datasource=sinusoid --logdir=logs/poly/baseline/ --pretrain_iterations=100000 --metatrain_iterations=0 --norm=None --update_batch_size=10 --train=False --test_set=True
+
+Plotting: 
+MAML: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/poly/ --metatrain_iterations=100000 --norm=None --update_batch_size=10
+Baseline: python plot_sinusoid.py --datasource=sinusoid --logdir=logs/poly/baseline/ --pretrain_iterations=100000 --metatrain_iterations=0 --norm=None --update_batch_size=10
+
+
+
+
+
+
+
+
+
+
+
