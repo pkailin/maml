@@ -35,6 +35,7 @@ class MAML:
         self.test_num_updates = test_num_updates
         if FLAGS.datasource == 'sinusoid':
             self.dim_hidden = [40, 40] # KL: fully-connected network with 2 hidden layers, 40 neurons in each layer 
+            # self.dim_hidden = [40, 40, 40, 40] # increase layers for sigmoid 
             self.loss_func = mse # loss function is MSE
             self.forward = self.forward_fc 
             self.construct_weights = self.construct_fc_weights # calls construct_fc_weights to create FC layers 

@@ -30,7 +30,8 @@ class DataGenerator(object):
             # KL: defining amp, phase and input range 
             self.amp_range = config.get('amp_range', [0.1, 5.0])
             self.phase_range = config.get('phase_range', [0, np.pi])
-            self.input_range = config.get('input_range', [-5.0, 5.0])
+            self.input_range = config.get('input_range', [-5.0, 5.0]) # for sinusoid
+            # self.input_range = config.get('input_range', [-8.0, 8.0]) # for sigmoid/polynomial 
 
             # KL: getting one-dim input/output points  
             self.dim_input = 1
@@ -170,8 +171,8 @@ class DataGenerator(object):
         KL: 
         batch_size: Number of unique sine wave tasks
         num_samples_per_class: Number of points per task
-
         '''
+
         amp = np.random.uniform(self.amp_range[0], self.amp_range[1], [self.batch_size]) # KL: creates random amplitudes for each task
         phase = np.random.uniform(self.phase_range[0], self.phase_range[1], [self.batch_size]) # KL: creates random phase for each task
         outputs = np.zeros([self.batch_size, self.num_samples_per_class, self.dim_output]) # KL: store outputs, each row represents points for each task 
@@ -183,5 +184,21 @@ class DataGenerator(object):
             if input_idx is not None: # KL: allow for specifying inputs during testing 
                 init_inputs[:,input_idx:,0] = np.linspace(self.input_range[0], self.input_range[1], num=self.num_samples_per_class-input_idx, retstep=False)
             
-            outputs[func] = amp[func] * np.sin(init_inputs[func]-phase[func]) # KL: generate sine wave outputs
+            # for sinusoids 
+            outputs[func] = amp[func] * np.sin(init_inputs[func]-phase[func])
+
+            # for sigmoid 
+            # scale = np.random.uniform(0.5, 5.0)
+            # shift = np.random.uniform(-4, 4)
+            # outputs[func] = 1 / (1 + np.exp(-scale * (init_inputs[func] - shift)))
+
+            # for polynomial
+            # degree = np.random.randint(2, 4)
+            # coeffs = np.random.uniform(-1, 1, degree + 1)
+            # outputs[func] = sum(coeffs[i] * (init_inputs[func] ** i) for i in range(degree + 1))
+
+        # return init_inputs, outputs, scale, shift # only uncomment for sigmoid plotting 
+        # return init_inputs, outputs, degree, coeffs # only uncomment for polynomial plotting 
         return init_inputs, outputs, amp, phase
+            
+            

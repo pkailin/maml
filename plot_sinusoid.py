@@ -56,11 +56,10 @@ def test_and_plot(model, sess, K, data_generator, update_lr=0.01, num_updates=10
     """
     Tests the trained MAML model on a single sinusoid task and plots the results.
     """
-    #sess.run(tf.global_variables_initializer())
-    #weights = model.weights
     task_outputbs = []
 
-    batch_x, batch_y, amp, phase = data_generator.generate(train=False)
+    # batch_x, batch_y, amp, phase = data_generator.generate(train=False) # for sinusoid 
+    batch_x, batch_y, scale, shift = data_generator.generate(train=False) # for sigmoid 
 
     num_classes = 1
     inputa = batch_x[:, :num_classes*K, :] # first K points in inputa (training set)
@@ -93,12 +92,15 @@ def test_and_plot(model, sess, K, data_generator, update_lr=0.01, num_updates=10
         plt.plot(inputb_sorted, labelb_sorted, 'g-', label='Ground Truth')
         # plt.plot(inputb_sorted, outputb_sorted, 'b--', label='MAML Prediction') # for MAML
         plt.plot(inputb_sorted, outputb_sorted, 'b--', label='Baseline Prediction') # for Baseline Model 
-        plt.title(f'Sinusoid Regression (Amplitude: {amp[0]:.2f}, Phase: {phase[0]:.2f})')
+        
+        # plt.title(f'Sinusoid Regression (Amplitude: {amp[0]:.2f}, Phase: {phase[0]:.2f})') # for sinusoid 
+        plt.title(f'Sigmoid Regression (Scale: {scale:.2f}, Shift: {shift:.2f})') # for sigmoid 
+
         plt.xlabel('x')
         plt.ylabel('y')
         plt.legend()
         # plt.savefig('./plots/gradstep_MAML' + str(i) + '.png') # for MAML
-        plt.savefig('./plots/gradstep_baseline' + str(i) + '.png')
+        plt.savefig('./plots/gradstep_baseline' + str(i) + '.png') # for Baseline Model
 
 
 def plot_sinusoid(): 
@@ -131,31 +133,19 @@ def plot_sinusoid():
     if FLAGS.train_update_lr == -1:
         FLAGS.train_update_lr = FLAGS.update_lr
 
-    exp_string = 'cls_'+str(FLAGS.num_classes)+'.mbs_'+str(FLAGS.meta_batch_size) + '.ubs_' + str(FLAGS.train_update_batch_size) + '.numstep' + str(FLAGS.num_updates) + '.updatelr' + str(FLAGS.train_update_lr)
-
-    if FLAGS.num_filters != 64:
-        exp_string += 'hidden' + str(FLAGS.num_filters)
-    if FLAGS.max_pool:
-        exp_string += 'maxpool'
-    if FLAGS.stop_grad:
-        exp_string += 'stopgrad'
-    if FLAGS.baseline:
-        exp_string += FLAGS.baseline
-    if FLAGS.norm == 'batch_norm':
-        exp_string += 'batchnorm'
-    elif FLAGS.norm == 'layer_norm':
-        exp_string += 'layernorm'
-    elif FLAGS.norm == 'None':
-        exp_string += 'nonorm'
-    else:
-        print('Norm setting not recognized.')
-
-    resume_itr = 0
-    model_file = None
-
+    # For sinusoid 
     # model_file = "logs/sine//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001oraclenonorm\model69999" # for oracle 
     # model_file = "logs/sine//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
-    model_file = "logs/sine/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model 
+    # model_file = "logs/sine/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model 
+
+    # For sigmoid 
+    # model_file = "logs/sigmoid//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
+    # model_file = "logs/sigmoid/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
+
+    # For sigmoid (4 hidden layers)
+    # model_file = "logs/sigmoid_4hidd//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
+    model_file = "logs/sigmoid_4hidd/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
+    
     print("Restoring model weights from " + model_file)
     saver.restore(sess, model_file)
     print("Model restored successfully!")
