@@ -30,12 +30,13 @@ class MAML:
         self.dim_input = dim_input
         self.dim_output = dim_output
         self.update_lr = FLAGS.update_lr
+        #self.update_lr = tf.compat.v1.placeholder_with_default(tf.constant(0.02, dtype=tf.float32), shape=()) #0.01 for sinusoid baseline, 0.02 for sigmoid baseline
         self.meta_lr = tf.placeholder_with_default(FLAGS.meta_lr, ())
         self.classification = False
         self.test_num_updates = test_num_updates
         if FLAGS.datasource == 'sinusoid':
             self.dim_hidden = [40, 40] # KL: fully-connected network with 2 hidden layers, 40 neurons in each layer 
-            # self.dim_hidden = [40, 40, 40, 40] # increase layers for sigmoid 
+            #self.dim_hidden = [40, 40, 40, 40]  # increase layers for sigmoid
             self.loss_func = mse # loss function is MSE
             self.forward = self.forward_fc 
             self.construct_weights = self.construct_fc_weights # calls construct_fc_weights to create FC layers 

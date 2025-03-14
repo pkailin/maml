@@ -331,7 +331,7 @@ def main():
         tf_data_load = False
         input_tensors = None
 
-    # KL: initialise MAML object 
+    # KL: choose MAML or reptile 
     model = MAML(dim_input, dim_output, test_num_updates=test_num_updates)
 
     # KL: for regression

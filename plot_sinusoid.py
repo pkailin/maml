@@ -7,6 +7,25 @@ import tensorflow as tf
 from data_generator import DataGenerator
 from maml import MAML
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_style('darkgrid')
+
+plt.rcParams.update({
+    "text.usetex": True,  # Use LaTeX for font rendering
+    "font.family": "serif",  # Use serif font
+    "font.serif": ["Computer Modern"],  # Use LaTeX default serif font
+    "axes.labelsize": 14,  # Font size for x and y labels
+    "axes.titlesize": 16,  # Font size for plot titles
+    "xtick.labelsize": 12,  # Font size for x-axis ticks
+    "ytick.labelsize": 12,  # Font size for y-axis ticks
+    "legend.fontsize": 12,  # Font size for legends
+    # "figure.facecolor": "#EAEAF2",  # Light grey background for figure
+    # "axes.facecolor": "#EAEAF2",  # Light grey background for axes
+    # "grid.color": "#D3D3D3",  # Light grey grid color
+    "grid.linestyle": "--"  # Dashed grid lines
+})
+
 import math
 import numpy as np 
 
@@ -52,13 +71,13 @@ flags.DEFINE_bool('test_set', False, 'Set to true to test on the the test set, F
 flags.DEFINE_integer('train_update_batch_size', -1, 'number of examples used for gradient update during training (use if you want to test with a different number).')
 flags.DEFINE_float('train_update_lr', -1, 'value of inner gradient step step during training. (use if you want to test with a different value)') # 0.1 for omniglot
 
-def test_and_plot(model, sess, K, data_generator, update_lr=0.01, num_updates=10):
+def test_and_plot(model, sess, K, data_generator, update_lr=0.001, num_updates=10):
     """
     Tests the trained MAML model on a single sinusoid task and plots the results.
     """
     task_outputbs = []
 
-    # batch_x, batch_y, amp, phase = data_generator.generate(train=False) # for sinusoid 
+    #batch_x, batch_y, amp, phase = data_generator.generate(train=False) # for sinusoid 
     batch_x, batch_y, scale, shift = data_generator.generate(train=False) # for sigmoid 
 
     num_classes = 1
@@ -82,7 +101,9 @@ def test_and_plot(model, sess, K, data_generator, update_lr=0.01, num_updates=10
     sorted_indices = np.argsort(values_inputb)
     inputb_sorted = values_inputb[sorted_indices]
     labelb_sorted = values_labelb[sorted_indices]
-
+    
+    '''
+    
     for i in range(outputbs.shape[0]):
 
         outputb_sorted = outputbs[i][sorted_indices]
@@ -90,17 +111,43 @@ def test_and_plot(model, sess, K, data_generator, update_lr=0.01, num_updates=10
         plt.figure(figsize=(6, 4))
         plt.scatter(values_inputa, values_labela, marker='x', color='r', label='Train Data')
         plt.plot(inputb_sorted, labelb_sorted, 'g-', label='Ground Truth')
-        # plt.plot(inputb_sorted, outputb_sorted, 'b--', label='MAML Prediction') # for MAML
+        #plt.plot(inputb_sorted, outputb_sorted, 'b--', label='MAML Prediction') # for MAML
         plt.plot(inputb_sorted, outputb_sorted, 'b--', label='Baseline Prediction') # for Baseline Model 
         
-        # plt.title(f'Sinusoid Regression (Amplitude: {amp[0]:.2f}, Phase: {phase[0]:.2f})') # for sinusoid 
+        #plt.title(f'Sinusoid Regression (Amplitude: {amp[0]:.2f}, Phase: {phase[0]:.2f})') # for sinusoid 
         plt.title(f'Sigmoid Regression (Scale: {scale:.2f}, Shift: {shift:.2f})') # for sigmoid 
 
         plt.xlabel('x')
         plt.ylabel('y')
         plt.legend()
-        # plt.savefig('./plots/gradstep_MAML' + str(i) + '.png') # for MAML
+        #plt.savefig('./plots/gradstep_MAML' + str(i) + '.png') # for MAML
         plt.savefig('./plots/gradstep_baseline' + str(i) + '.png') # for Baseline Model
+    '''
+
+    # Select the first and last gradient step
+    outputb_first = outputbs[0][sorted_indices]  # First gradient step
+    outputb_last = outputbs[-1][sorted_indices]  # Last gradient step
+
+    plt.figure(figsize=(6, 4))
+
+    # Plot training data and ground truth
+    plt.scatter(values_inputa, values_labela, marker='x', color='r', label='Train Data')
+    plt.plot(inputb_sorted, labelb_sorted, 'g-', label='Ground Truth')
+
+    # Plot the first and last gradient step predictions
+    plt.plot(inputb_sorted, outputb_first, 'b--', label='After 1 Step')  
+    plt.plot(inputb_sorted, outputb_last, 'm--', label='After 10 Steps')  
+
+    # Set title and labels
+    #plt.title(f'Sinusoid Regression (Amplitude: {amp[0]:.2f}, Phase: {phase[0]:.2f})') # for sinusoid 
+    plt.title(f'Sigmoid Regression (Scale: {scale:.2f}, Shift: {shift:.2f})') # for sigmoid 
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.legend()
+
+    # Save figure
+    plt.savefig('./plots/grad_MAML.png') # for MAML
+    #plt.savefig('./plots/grad_baseline.png') # for Baseline Model
 
 
 def plot_sinusoid(): 
@@ -113,7 +160,7 @@ def plot_sinusoid():
     dim_output = data_generator.dim_output # for MAML/pre-train 
     # dim_output = 3 # for oracle 
 
-    test_num_updates = 10
+    test_num_updates = 10 
 
     # Initialize the MAML model
     model = MAML(dim_input=dim_input, dim_output=dim_output, test_num_updates=test_num_updates)
@@ -133,25 +180,37 @@ def plot_sinusoid():
     if FLAGS.train_update_lr == -1:
         FLAGS.train_update_lr = FLAGS.update_lr
 
-    # For sinusoid 
-    # model_file = "logs/sine//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001oraclenonorm\model69999" # for oracle 
-    # model_file = "logs/sine//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
-    # model_file = "logs/sine/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model 
+    # For sinusoid (10 shot) 
+    #model_file = "logs/sine//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001oraclenonorm\model69999" # for oracle 
+    #model_file = "logs/sine//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
+    #model_file = "logs/sine/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
+
+    # For sinusoid (5 shot)
+    #model_file = "logs/sine_5shot//cls_5.mbs_25.ubs_5.numstep1.updatelr0.001nonorm\model69999" # for MAML
+    #model_file = "logs/sine_5shot/baseline//cls_5.mbs_25.ubs_5.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
+
+    # For sinusoid (20 shot)
+    #model_file = "logs/sine_20shot//cls_5.mbs_25.ubs_20.numstep1.updatelr0.001nonorm\model69999" # for MAML
+    #model_file = "logs/sine_20shot/baseline//cls_5.mbs_25.ubs_20.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model   
 
     # For sigmoid 
-    # model_file = "logs/sigmoid//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
-    # model_file = "logs/sigmoid/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
+    model_file = "logs/sigmoid//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
+    #model_file = "logs/sigmoid/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
 
     # For sigmoid (4 hidden layers)
-    # model_file = "logs/sigmoid_4hidd//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
-    model_file = "logs/sigmoid_4hidd/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
+    # model_file = "logs/sigmoid_4hidd1//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for MAML
+    #model_file = "logs/sigmoid_4hidd1/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model69999" # for baseline pretrained model
+
+    # For sigmoid (4 hidden layers, Trial 2) 
+    #model_file = "logs/sigmoid_4hidd2//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model99999" # for MAML
+    #model_file = "logs/sigmoid_4hidd2/baseline//cls_5.mbs_25.ubs_10.numstep1.updatelr0.001nonorm\model99999" # for baseline pretrained model
     
     print("Restoring model weights from " + model_file)
     saver.restore(sess, model_file)
     print("Model restored successfully!")
 
     # Call the function to test and plot adaptation
-    test_and_plot(model, sess, 5, data_generator=data_generator) 
+    test_and_plot(model, sess, K=10, data_generator=data_generator) 
 
 if __name__ == "__main__":
     plot_sinusoid()

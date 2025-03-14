@@ -1,0 +1,25 @@
+Running MAML and Baseline Experiments 
+Running MAML Training... 
+Traceback (most recent call last): 
+  File "C:\Users\65889\Dropbox\PC\Desktop\MPhil_MLMI\MLMI4\maml\main.py", line 34, in <module> 
+    import tensorflow as tf 
+ModuleNotFoundError: No module named 'tensorflow' 
+MAML Training Complete 
+Running Baseline Training... 
+Traceback (most recent call last): 
+  File "C:\Users\65889\Dropbox\PC\Desktop\MPhil_MLMI\MLMI4\maml\main.py", line 34, in <module> 
+    import tensorflow as tf 
+ModuleNotFoundError: No module named 'tensorflow' 
+Baseline Training Complete 
+Running MAML Evaluation... 
+Traceback (most recent call last): 
+  File "C:\Users\65889\Dropbox\PC\Desktop\MPhil_MLMI\MLMI4\maml\main.py", line 34, in <module> 
+    import tensorflow as tf 
+ModuleNotFoundError: No module named 'tensorflow' 
+MAML Evaluation Complete 
+Running Baseline Evaluation... 
+Traceback (most recent call last): 
+  File "C:\Users\65889\Dropbox\PC\Desktop\MPhil_MLMI\MLMI4\maml\main.py", line 34, in <module> 
+    import tensorflow as tf 
+ModuleNotFoundError: No module named 'tensorflow' 
+Baseline Evaluation Complete 
